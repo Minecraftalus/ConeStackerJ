@@ -65,7 +65,7 @@ public class StackerAppState extends BaseAppState implements ActionListener {
             for(Spatial cone : cones) {
                 app.getRootNode().detachChild(cone);
             }
-            Leaderboard.getInstance().addScore(score);
+            Leaderboard.getInstance().saveScore(score);
             coneX=0;
             coneSpeed=2f;
             heightOffset=0;

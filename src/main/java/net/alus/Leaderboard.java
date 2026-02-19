@@ -2,14 +2,16 @@ package net.alus;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Leaderboard implements Serializable {
   private static Leaderboard instance;
-  private final List<Score> scores;
+  private final Map<String, Integer> scores;
   private String username;
   private Leaderboard() {
-    scores = new ArrayList<>();
+    scores = new HashMap<>();
     username = "Guest";
   }
   public static Leaderboard getInstance() {
@@ -36,19 +38,18 @@ public class Leaderboard implements Serializable {
     }
   }
 
-  public List<Score> getScores() {
-    return scores;
+  public Map<String, Integer> getScores() {
+    return new HashMap<>(scores);
   }
 
-  public void addScore(int score) {
-    scores.add(new Score(username, score));
-    save();
+  public void saveScore(int score) {
+    if(scores.getOrDefault(username, 0) < score) {
+      scores.put(username, score);
+      save();
+    }
   }
 
   public void setUsername(String username) {
     this.username=username;
   }
-
-
-  public record Score(String name, int score) implements Serializable {}
 }
