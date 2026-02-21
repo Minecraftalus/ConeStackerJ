@@ -3,81 +3,219 @@ package net.alus;
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.DepthOfFieldFilter;
-import com.jme3.post.filters.RadialBlurFilter;
-import com.simsilica.lemur.Button;
-import com.simsilica.lemur.GuiGlobals;
-import com.simsilica.lemur.Label;
-import com.simsilica.lemur.Panel;
+import com.jme3.scene.Spatial;
+import com.simsilica.lemur.*;
 import com.simsilica.lemur.component.IconComponent;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
+import com.simsilica.lemur.core.GuiControl;
+import com.simsilica.lemur.core.VersionedReference;
+import com.simsilica.lemur.focus.FocusChangeEvent;
+import com.simsilica.lemur.focus.FocusChangeListener;
+import com.simsilica.lemur.text.DocumentModel;
+import conestacker.ScoreOuterClass;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Map;
 
 public class UiAppState extends BaseAppState {
+    private static final Logger log = LogManager.getLogger(UiAppState.class);
     private Label scoreLabel;
-    Button playButton;
-    Panel titlePanel = new Panel();
+    private Button playButton, settingsButton, leaderboardButton, backButton, syncButton;
+    private ListBox<String> localLeaderboard, globalLeaderboard;
+    private Panel titlePanel;
+    private TextField usernameField;
+    VersionedReference<DocumentModel> usernameRef;
     private FilterPostProcessor fpp;
     private DepthOfFieldFilter blurFilter;
     private ConeStackerJ app;
-    int appHeight;
-    int appWidth;
-    int prevAppHeight;
-    int prevAppWidth;
+    int appHeight, appWidth, prevAppHeight, prevAppWidth;
     IconComponent titleIcon;
 
     @Override
     protected void initialize(Application app) {
         this.app = (ConeStackerJ) app;
 
-        appHeight=app.getContext().getSettings().getHeight();
-        appWidth=app.getContext().getSettings().getWidth();
+        appHeight = app.getContext().getSettings().getHeight();
+        appWidth = app.getContext().getSettings().getWidth();
 
         GuiGlobals.getInstance().getStyles().getSelector("glass").set("font", this.app.getAssetManager().loadFont("Fonts/ray.fnt"));
 
         scoreLabel = new Label("Cones: 0");
         scoreLabel.setFontSize(30);
         scoreLabel.setColor(ColorRGBA.Black);
-        scoreLabel.setLocalTranslation(20, appHeight - 20, 0);
+        //scoreLabel.setLocalTranslation(20, appHeight - 20, 0);
 
         playButton = new Button("Play");
         playButton.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 10, -5));
-        playButton.setLocalTranslation(appWidth/2 - playButton.getPreferredSize().x/2, appHeight/2, 0);
+        //playButton.setLocalTranslation(appWidth / 2f - playButton.getPreferredSize().x / 2, appHeight / 2f, 0);
         playButton.addClickCommands(this::handleStartPress);
+        addObject(playButton);
+
+        leaderboardButton = new Button("");
+        leaderboardButton.setPreferredSize(new Vector3f(80, 80, 0));
+        leaderboardButton.setIcon(new IconComponent("Textures/leaderboard.png", leaderboardButton.getPreferredSize().x / 128, 0f, 0, 0f, false));
+        leaderboardButton.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
+        //leaderboardButton.setLocalTranslation(appWidth / 2f - leaderboardButton.getPreferredSize().x - 5, appHeight / 2f - leaderboardButton.getPreferredSize().y, 0);
+        leaderboardButton.addClickCommands(this::handleLeaderboardPress);
+        addObject(leaderboardButton);
+
+        settingsButton = new Button("");
+        settingsButton.setPreferredSize(new Vector3f(80, 80, 0));
+        settingsButton.setIcon(new IconComponent("Textures/settings.png", settingsButton.getPreferredSize().x / 128, 0f, 0, 0f, false));
+        settingsButton.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
+        //settingsButton.setLocalTranslation(appWidth / 2f + 5, appHeight / 2f - settingsButton.getPreferredSize().y, 0);
+        settingsButton.addClickCommands(this::handleSettingsPress);
+        addObject(settingsButton);
+
+        backButton = new Button("");
+        backButton.setPreferredSize(new Vector3f(60, 60, 0));
+        backButton.setIcon(new IconComponent("Textures/back.png", backButton.getPreferredSize().x / 128, 0f, 0, 0f, false));
+        backButton.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
+        //backButton.setLocalTranslation(5, appHeight - 5, 0);
+        backButton.addClickCommands(this::handleBackPress);
+
+        syncButton = new Button("");
+        syncButton.setPreferredSize(new Vector3f(60, 60, 0));
+        syncButton.setIcon(new IconComponent("Textures/sync.png", syncButton.getPreferredSize().x / 128, 0f, 0, 0f, false));
+        syncButton.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
+        //syncButton.setLocalTranslation(5, appHeight - 5, 0);
+        syncButton.addClickCommands(this::handleSyncPress);
 
         titleIcon = new IconComponent("Textures/title.png");
         titleIcon.setIconScale(0.25f);
+        titlePanel = new Panel();
         titlePanel.setBackground(titleIcon);
-        titlePanel.setLocalTranslation(appWidth/2 - titlePanel.getPreferredSize().x/2, appHeight/1.2f, 0);
+        //titlePanel.setLocalTranslation(appWidth / 2f - titlePanel.getPreferredSize().x / 2, appHeight / 1.2f, 0);
+        addObject(titlePanel);
 
-        this.app.getGuiNode().attachChild(playButton);
-        this.app.getGuiNode().attachChild(titlePanel);
+        GuiGlobals.getInstance().getStyles().getSelector("list.item", "glass").set("fontSize", 28f);
+
+        localLeaderboard = new ListBox<>();
+        globalLeaderboard = new ListBox<>();
+
+        usernameField = new TextField("XXXXXXXXXXXX");
+        usernameField.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
+        usernameField.getControl(GuiControl.class).addFocusChangeListener(new FocusChangeListener() {
+            @Override
+            public void focusGained(FocusChangeEvent event) {}
+            @Override
+            public void focusLost(FocusChangeEvent event) {
+                if(usernameField.getText().isEmpty())
+                    usernameField.setText("Guest");
+                Leaderboard.getInstance().setUsername(usernameField.getText());
+            }
+        });
+        usernameRef = usernameField.getDocumentModel().createReference();
 
         fpp = new FilterPostProcessor(app.getAssetManager());
         blurFilter = new DepthOfFieldFilter();
         fpp.addFilter(blurFilter);
         blurFilter.setEnabled(true);
+        blurFilter.setBlurScale(1.5f);
         app.getViewPort().addProcessor(fpp);
     }
 
     private void handleStartPress(Button button) {
         getState(StackerAppState.class).setStackingEnabled(true);
-        app.getGuiNode().detachChild(playButton);
-        app.getGuiNode().attachChild(scoreLabel);
-        app.getGuiNode().detachChild(titlePanel);
+        removeObject(playButton);
+        removeObject(titlePanel);
+        removeObject(settingsButton);
+        removeObject(leaderboardButton);
+        addObject(scoreLabel);
         blurFilter.setEnabled(false);
+    }
+
+    private void handleSettingsPress(Button button) {
+        removeObject(playButton);
+        removeObject(titlePanel);
+        removeObject(settingsButton);
+        removeObject(leaderboardButton);
+        addObject(backButton);
+        addObject(usernameField);
+        usernameField.setText(Leaderboard.getInstance().getUsername());
+    }
+
+    private void handleLeaderboardPress(Button button) {
+        removeObject(playButton);
+        removeObject(titlePanel);
+        removeObject(settingsButton);
+        removeObject(leaderboardButton);
+        addObject(localLeaderboard);
+        addObject(globalLeaderboard);
+        addObject(backButton);
+        addObject(usernameField);
+        addObject(syncButton);
+        updateGlobalLeaderboard();
+        updateLocalLeaderboard();
+        usernameField.setText(Leaderboard.getInstance().getUsername());
+    }
+
+    private void handleBackPress(Button button) {
+        removeObject(backButton);
+        removeObject(localLeaderboard);
+        removeObject(globalLeaderboard);
+        removeObject(usernameField);
+        removeObject(syncButton);
+        addObject(playButton);
+        addObject(titlePanel);
+        addObject(settingsButton);
+        addObject(leaderboardButton);
+    }
+
+    private void handleSyncPress(Button button) {
+        NetworkHandler.sendScoreListToServer(Leaderboard.getInstance().getScores());
+        updateGlobalLeaderboard();
     }
 
     public void handleGameOver() {
         getState(StackerAppState.class).setStackingEnabled(false);
-        app.getGuiNode().attachChild(playButton);
-        app.getGuiNode().detachChild(scoreLabel);
-        app.getGuiNode().attachChild(titlePanel);
+        addObject(playButton);
+        addObject(titlePanel);
+        addObject(settingsButton);
+        addObject(leaderboardButton);
+        removeObject(scoreLabel);
         blurFilter.setEnabled(true);
     }
 
     public void updateScore(int score) {
         scoreLabel.setText("Cones: " + score);
+    }
+
+    private void updateGlobalLeaderboard() {
+      NetworkHandler.getTopTen().thenAccept(scores -> {
+        app.enqueue(() -> {
+          if (!scores.isEmpty()) {
+            globalLeaderboard.getModel().clear();
+            for (int i = 0; i < scores.size(); i++) {
+              ScoreOuterClass.Score score = scores.get(i);
+              String text = (i + 1) + " | " + score.getUser() + " | " + score.getScore();
+              globalLeaderboard.getModel().add(text);
+            }
+          }
+          return null;
+        });
+
+      });
+    }
+
+    private void updateLocalLeaderboard() {
+        localLeaderboard.getModel().clear();
+        List<Map.Entry<String, Integer>> scores = Leaderboard.getInstance().getScores()
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        for (int i = 0; i < scores.size(); i++) {
+            Map.Entry<String, Integer> score = scores.get(i);
+            String text = (i + 1) + " | " + score.getKey() + " | " + score.getValue();
+            localLeaderboard.getModel().add(text);
+        }
     }
 
     @Override
@@ -94,14 +232,59 @@ public class UiAppState extends BaseAppState {
             titlePanel.setBackground(null);
             titleIcon.setIconScale(ratio * appWidth);
             titlePanel.setBackground(titleIcon);
-            titlePanel.setLocalTranslation(appWidth / 2 - titlePanel.getPreferredSize().x / 2, appHeight / 1.2f, 0);
-            prevAppWidth=appWidth;
-            prevAppHeight=appHeight;
+            titlePanel.setLocalTranslation(appWidth / 2f - titlePanel.getPreferredSize().x / 2, appHeight / 1.2f, 0);
+
+            settingsButton.setLocalTranslation(appWidth / 2f + 5, appHeight / 2f - settingsButton.getPreferredSize().y, 0);
+            leaderboardButton.setLocalTranslation(appWidth / 2f - leaderboardButton.getPreferredSize().x - 5, appHeight / 2f - leaderboardButton.getPreferredSize().y, 0);
+            backButton.setLocalTranslation(5, appHeight - 5, 0);
+            syncButton.setLocalTranslation(appWidth/2f, appHeight*0.7f+syncButton.getPreferredSize().y, 0);
+            playButton.setLocalTranslation(appWidth / 2f - playButton.getPreferredSize().x / 2, appHeight / 2f, 0);
+            scoreLabel.setLocalTranslation(20, appHeight - 20, 0);
+
+            float itemHeight = 64f;
+            float leaderboardWidth = Math.max(35f, appWidth * (7 / 16f)); // app crashes if less than this amount
+            float leaderboardHeight = Math.max(170f, appHeight * 0.7f); // app crashes if less than this amount
+
+            localLeaderboard.setLocalTranslation(20, leaderboardHeight, 0);
+            localLeaderboard.setPreferredSize(new Vector3f(leaderboardWidth, leaderboardHeight, 0));
+            localLeaderboard.setVisibleItems((int) (leaderboardHeight / itemHeight));
+
+            globalLeaderboard.setLocalTranslation(appWidth / 2f, leaderboardHeight, 0);
+            globalLeaderboard.setPreferredSize(new Vector3f(leaderboardWidth, leaderboardHeight, 0));
+            globalLeaderboard.setVisibleItems((int) (leaderboardHeight / itemHeight));
+
+            usernameField.setPreferredSize(usernameField.getPreferredSize());
+            usernameField.setLocalTranslation(appWidth/2f-usernameField.getPreferredSize().x/2, appHeight*0.9f, 0);
+
+
+            prevAppWidth = appWidth;
+            prevAppHeight = appHeight;
         }
-        playButton.setLocalTranslation(appWidth/2 - playButton.getPreferredSize().x/2, appHeight/2, 0);
-        scoreLabel.setLocalTranslation(20, appHeight - 20, 0);
+        if(usernameRef.update()) {
+            String input = usernameField.getText();
+
+            String cleanInput = input.replaceAll("[^a-zA-Z0-9_-]", "");
+            if(cleanInput.length() > 10) {
+                cleanInput = cleanInput.substring(0, 10);
+            }
+
+            usernameField.setText(cleanInput);
+        }
     }
 
-    @Override protected void onEnable() {}
-    @Override protected void onDisable() {}
+    private void addObject(Spatial object) {
+        app.getGuiNode().attachChild(object);
+    }
+
+    private void removeObject(Spatial object) {
+        app.getGuiNode().detachChild(object);
+    }
+
+    @Override
+    protected void onEnable() {
+    }
+
+    @Override
+    protected void onDisable() {
+    }
 }

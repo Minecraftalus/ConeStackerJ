@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package conestacker;
+
+message Score {
+  string user = 1;
+  uint32 score = 2;
+}
+
+message ScoreList {
+  repeated Score scores = 1;
+}

@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+
 plugins {
     id 'application'
     id 'java'
@@ -5,6 +7,7 @@ plugins {
     id 'idea'
     id "io.github.0ffz.github-packages" version "1.2.1" // Plugin for anonymous inclusion of artifacts hosted in github package registry
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 description = 'ConeStackerJ application'
@@ -19,7 +22,7 @@ java {
 
 ext.jmonkeyengineVersion = '3.8.1-stable'
 
-mainClassName = 'net.alus.ConeStackerJ'
+mainClassName = 'net.alus.Main'
 if (!hasProperty('mainClass')) {
     ext.mainClass = mainClassName
 }
@@ -48,13 +51,20 @@ dependencies {
     implementation 'org.jmonkeyengine:jme3-effects:' + jmonkeyengineVersion
     runtimeOnly 'org.jmonkeyengine:jme3-jogg:' + jmonkeyengineVersion
     runtimeOnly 'org.jmonkeyengine:jme3-plugins:' + jmonkeyengineVersion
-
-
     runtimeOnly 'org.jmonkeyengine:jme3-lwjgl3:' + jmonkeyengineVersion
+
+    // Source: https://mvnrepository.com/artifact/org.springframework.boot/spring-boot
+    //implementation("org.springframework.boot:spring-boot:4.0.3")
+
+    implementation("org.springframework.boot:spring-boot-starter:4.0.3")
+    implementation("org.springframework.boot:spring-boot-starter-web:4.0.3")
+    implementation("org.springframework.boot:spring-boot-starter-tomcat:4.0.3")
+
+    // Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+    implementation("com.google.protobuf:protobuf-java:4.33.5")
 
     implementation 'com.simsilica:lemur:1.16.0'
     implementation 'com.simsilica:lemur-proto:1.13.0'
-    //implementation 'wf.frk:jme-igui:0.1.2'
     implementation 'com.github.stephengold:Heart:8.6.0'
 }
 
@@ -221,5 +231,37 @@ task cleanSOs(type: Delete) {
 task fund(){
     doLast {
        java.awt.Desktop.desktop.browse "https://start.jmonkeyengine.org/#!funding=JME_DESKTOP,LEMUR,16283%2Fjme-igui,11511%2Fe534fc1e-5b78-46b7-a831-d5d40cbd9dcd".toURI()
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.33.5"
+    }
+    generateProtoTasks {
+        all().each { task ->
+            // Additional config if needed
+        }
+    }
+}
+
+shadowJar {
+    mergeServiceFiles()
+
+    // Spring Boot 3+ uses this file for autoconfiguration
+    append 'META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports'
+    append 'META-INF/spring/org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration.imports'
+
+    // Standard Spring legacy factories
+    transform(PropertiesFileTransformer) {
+        paths = [
+                'META-INF/spring.factories',
+                'META-INF/spring-autoconfigure-metadata.properties',
+                'META-INF/spring.handlers',
+                'META-INF/spring.schemas',
+                'META-INF/spring.tooling',
+                'META-INF/spring-configuration-metadata.json'
+        ]
+        mergeStrategy = "append"
     }
 }

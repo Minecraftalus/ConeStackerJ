@@ -5,14 +5,14 @@ import com.jme3.app.state.BaseAppState;
 import com.jme3.math.Vector3f;
 
 public class CameraAppState extends BaseAppState {
-    private RotationCamera2 rotationCamera;
+    private RotationCamera rotationCamera;
     private float rotationSpeed = 0.6f;
     private ConeStackerJ app;
 
     @Override
     protected void initialize(Application app) {
         this.app = (ConeStackerJ)app;
-        rotationCamera = new RotationCamera2(app.getCamera(), 10, this.app.getRootNode());
+        rotationCamera = new RotationCamera(app.getCamera(), 10, this.app.getRootNode());
         rotationCamera.setLookAtOffset(new Vector3f(0, 1f, 0));
     }
 

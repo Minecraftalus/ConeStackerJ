@@ -6,6 +6,7 @@
 /*.dylib
 /*.so
 ./leaderboard
+./leaderboardSERVER
 
 /.idea/
 
