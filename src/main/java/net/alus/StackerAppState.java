@@ -2,6 +2,8 @@ package net.alus;
 
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
+import com.jme3.audio.AudioData;
+import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -12,6 +14,8 @@ import java.util.ArrayList;
 
 public class StackerAppState extends BaseAppState implements ActionListener {
     private ConeStackerJ app;
+    private AudioNode coneFallSound;
+    private AudioNode coneDropSound;
     private Spatial basicTrafficCone;
     private Spatial floatingCone;
     private float coneSpeed;
@@ -44,6 +48,9 @@ public class StackerAppState extends BaseAppState implements ActionListener {
         coneSpeed=initialConeSpeed;
         coneWidth=((BoundingBox)basicTrafficCone.getWorldBound()).getXExtent()*2;
 
+        coneFallSound = new AudioNode(app.getAssetManager(), "Sound/coneDrop.ogg", AudioData.DataType.Buffer);
+        coneDropSound = new AudioNode(app.getAssetManager(), "Sound/coneFall.ogg", AudioData.DataType.Buffer);
+
         floatingCone = basicTrafficCone.clone();
         floatingCone.setLocalTranslation(0, heightOffset+1, 0);
         this.app.getRootNode().attachChild(floatingCone);
@@ -68,6 +75,7 @@ public class StackerAppState extends BaseAppState implements ActionListener {
                 coneSpeed += speedChangePerCone;
             }
             getState(UiAppState.class).updateScore(score);
+            app.getAudioRenderer().playSource(coneFallSound.clone());
         } else {
             for(Spatial cone : cones) {
                 app.getRootNode().detachChild(cone);
@@ -81,6 +89,7 @@ public class StackerAppState extends BaseAppState implements ActionListener {
             getState(UiAppState.class).updateScore(score);
             spawnCone();
             getState(UiAppState.class).handleGameOver();
+            app.getAudioRenderer().playSource(coneDropSound.clone());
         }
     }
 
