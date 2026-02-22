@@ -5,9 +5,9 @@
 /*.dll
 /*.dylib
 /*.so
-./leaderboard
-./leaderboardSERVER
 
 /.idea/
 
 local.properties
+/leaderboard
+/leaderboardSERVER
