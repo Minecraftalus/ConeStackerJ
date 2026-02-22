@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class NetworkHandler {
-  private static  final String serverURI = "https://concentric-venous-hang.ngrok-free.dev/";
+  private static  final String serverURI = "https://conestackerbackend.share.zrok.io/";
   //private static final String serverURI = "http://localhost:8080/";
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
@@ -23,7 +23,6 @@ public class NetworkHandler {
               .uri(URI.create(serverURI+"savescore"))
               .POST(HttpRequest.BodyPublishers.ofByteArray(data))
               .header("Content-Type", "application/x-protobuf")
-              .header("ngrok-skip-browser-warning", "true")
               .build();
 
     CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -35,7 +34,7 @@ public class NetworkHandler {
 
   }
 
-  public static void sendScoreListToServer(Map<String, Integer> scores) {
+  public static CompletableFuture<HttpResponse<String>> sendScoreListToServer(Map<String, Integer> scores) {
     ScoreOuterClass.ScoreList.Builder listBuilder = ScoreOuterClass.ScoreList.newBuilder();
     for(Map.Entry<String, Integer> score : scores.entrySet()) {
       listBuilder.addScores(ScoreOuterClass.Score.newBuilder().setUser(score.getKey()).setScore(score.getValue()).build());
@@ -46,10 +45,9 @@ public class NetworkHandler {
         .uri(URI.create(serverURI+"savescorelist"))
         .POST(HttpRequest.BodyPublishers.ofByteArray(data))
         .header("Content-Type", "application/x-protobuf")
-        .header("ngrok-skip-browser-warning", "true")
         .build();
 
-    CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    return CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
         .exceptionally(ex -> {
           System.err.println("Failed to send score: " + ex.getMessage());
           ex.printStackTrace();
@@ -70,10 +68,10 @@ public class NetworkHandler {
                 ScoreOuterClass.ScoreList scoreList = ScoreOuterClass.ScoreList.parseFrom(bytes);
                 return scoreList.getScoresList();
               } catch (Exception e) {
-                return new ArrayList<ScoreOuterClass.Score>();
+                  e.printStackTrace();
+                return null;
               }
             })
-            .exceptionally((e)-> new ArrayList<>());
-            //.join();
+            .exceptionally((e)-> null);
   }
 }

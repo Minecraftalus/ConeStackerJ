@@ -97,6 +97,7 @@ public class UiAppState extends BaseAppState {
 
         localLeaderboard = new ListBox<>();
         globalLeaderboard = new ListBox<>();
+        globalLeaderboard.getModel().add("Loading...");
 
         usernameField = new TextField("XXXXXXXXXXXX");
         usernameField.setBackground(new QuadBackgroundComponent(ColorRGBA.LightGray, 0, 0));
@@ -168,8 +169,10 @@ public class UiAppState extends BaseAppState {
     }
 
     private void handleSyncPress(Button button) {
-        NetworkHandler.sendScoreListToServer(Leaderboard.getInstance().getScores());
-        updateGlobalLeaderboard();
+        globalLeaderboard.getModel().clear();
+        globalLeaderboard.getModel().add("Loading...");
+        NetworkHandler.sendScoreListToServer(Leaderboard.getInstance().getScores()).thenRun(
+                ()->app.enqueue(this::updateGlobalLeaderboard));
     }
 
     public void handleGameOver() {
@@ -187,20 +190,20 @@ public class UiAppState extends BaseAppState {
     }
 
     private void updateGlobalLeaderboard() {
-      NetworkHandler.getTopTen().thenAccept(scores -> {
-        app.enqueue(() -> {
-          if (!scores.isEmpty()) {
-            globalLeaderboard.getModel().clear();
-            for (int i = 0; i < scores.size(); i++) {
-              ScoreOuterClass.Score score = scores.get(i);
-              String text = (i + 1) + " | " + score.getUser() + " | " + score.getScore();
-              globalLeaderboard.getModel().add(text);
-            }
+      NetworkHandler.getTopTen().thenAccept(scores -> app.enqueue(() -> {
+        if (scores!=null) {
+          globalLeaderboard.getModel().clear();
+          for (int i = 0; i < scores.size(); i++) {
+            ScoreOuterClass.Score score = scores.get(i);
+            String text = (i + 1) + " | " + score.getUser() + " | " + score.getScore();
+            globalLeaderboard.getModel().add(text);
           }
-          return null;
-        });
-
-      });
+        } else {
+            globalLeaderboard.getModel().clear();
+            globalLeaderboard.getModel().add("Failed to get scores");
+        }
+        return null;
+      }));
     }
 
     private void updateLocalLeaderboard() {
