@@ -1,7 +1,6 @@
 # Blender 5.0.0
 # www.blender.org
 mtllib trafficcone.mtl
-o obj_0
 v 0.904493 0.100000 0.899691
 v 0.904493 0.000000 0.899691
 v 0.904493 -0.000000 -0.900310
