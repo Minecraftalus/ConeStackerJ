@@ -1,5 +1,8 @@
 package net.alus;
 
+import com.filter.textcorrector.TextFilter;
+import com.filter.textcorrector.spellchecking.Language;
+
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +13,7 @@ public class Leaderboard implements Serializable {
   private String username;
   private static String filePath = "./leaderboard";
   private static boolean isServer = false;
+  private static final TextFilter textFilter = new TextFilter(Language.ENGLISH);
 
   private Leaderboard() {
     scores = new HashMap<>();
@@ -39,7 +43,7 @@ public class Leaderboard implements Serializable {
     }
   }
 
-  public Map<String, Integer> getScores() {
+  public synchronized Map<String, Integer> getScores() {
     return new HashMap<>(scores);
   }
 
@@ -52,7 +56,7 @@ public class Leaderboard implements Serializable {
     }
   }
 
-  private void save() {
+  private synchronized void save() {
     try (FileOutputStream fileOut = new FileOutputStream(filePath);
          ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
       out.writeObject(this);
@@ -61,12 +65,36 @@ public class Leaderboard implements Serializable {
     }
   }
 
-  public void setUsername(String username) {
+  public synchronized void setUsername(String username) {
+    if(textFilter.isProfane(username))
+      username="Guest";
     this.username=username;
     save();
   }
 
   public String getUsername() {
       return username;
+  }
+
+  public synchronized void deleteUser(String removedUser) {
+    if(scores.remove(removedUser)==null) {
+      System.out.println("Failed to remove score for !");
+    } else {
+      System.out.println("Removed '"+removedUser+"' successfully!");
+      save();
+    }
+  }
+
+  public synchronized void renameUser(String olderUser, String newUser) {
+    if(scores.containsKey(newUser)) {
+      System.out.println("User '"+newUser+"' already exists!");
+    } else if(!scores.containsKey(olderUser)){
+      System.out.println("User '"+olderUser+"' not found!");
+    } else {
+      scores.put(newUser, scores.remove(olderUser));
+      System.out.println("Successfully renamed '" + olderUser + "' to '" + newUser + "'");
+      save();
+    }
+
   }
 }

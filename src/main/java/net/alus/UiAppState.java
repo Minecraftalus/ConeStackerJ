@@ -1,5 +1,7 @@
 package net.alus;
 
+import com.filter.textcorrector.TextFilter;
+import com.filter.textcorrector.spellchecking.Language;
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.math.ColorRGBA;
@@ -35,6 +37,7 @@ public class UiAppState extends BaseAppState {
     private ConeStackerJ app;
     int appHeight, appWidth, prevAppHeight, prevAppWidth;
     IconComponent titleIcon;
+    TextFilter textFilter = new TextFilter(Language.ENGLISH);
 
     @Override
     protected void initialize(Application app) {
@@ -106,7 +109,7 @@ public class UiAppState extends BaseAppState {
             public void focusGained(FocusChangeEvent event) {}
             @Override
             public void focusLost(FocusChangeEvent event) {
-                if(usernameField.getText().isEmpty())
+                if(usernameField.getText().isEmpty() || textFilter.isProfane(usernameField.getText()))
                     usernameField.setText("Guest");
                 Leaderboard.getInstance().setUsername(usernameField.getText());
             }
@@ -267,8 +270,8 @@ public class UiAppState extends BaseAppState {
             String input = usernameField.getText();
 
             String cleanInput = input.replaceAll("[^a-zA-Z0-9_-]", "");
-            if(cleanInput.length() > 10) {
-                cleanInput = cleanInput.substring(0, 10);
+            if(cleanInput.length() > 12) {
+                cleanInput = cleanInput.substring(0, 12);
             }
 
             usernameField.setText(cleanInput);

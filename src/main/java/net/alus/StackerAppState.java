@@ -56,6 +56,8 @@ public class StackerAppState extends BaseAppState implements ActionListener {
         this.app.getRootNode().attachChild(floatingCone);
 
         app.getInputManager().addMapping("Place", new KeyTrigger(KeyInput.KEY_SPACE));
+        app.getInputManager().addMapping("Place", new KeyTrigger(KeyInput.KEY_W));
+        app.getInputManager().addMapping("Place", new KeyTrigger(KeyInput.KEY_UP));
         app.getInputManager().addListener(this, "Place");
 
         spawnCone();

@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class NetworkHandler {
-  private static  final String serverURI = "https://conestackerbackend.share.zrok.io/";
+  private static  final String serverURI = "https://conestackerserver.share.zrok.io/";
   //private static final String serverURI = "http://localhost:8080/";
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
 

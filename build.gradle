@@ -33,6 +33,7 @@ repositories {
 
     mavenCentral()
     mavenLocal()
+    maven { url 'https://jitpack.io' }
 }
 
 application {
@@ -62,6 +63,8 @@ dependencies {
 
     // Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation("com.google.protobuf:protobuf-java:4.33.5")
+
+    implementation 'com.github.Twinkle942910:CheckMateFilter:v1.0'
 
     implementation 'com.simsilica:lemur:1.16.0'
     implementation 'com.simsilica:lemur-proto:1.13.0'
