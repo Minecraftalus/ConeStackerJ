@@ -53,6 +53,10 @@ public class StackerAppState extends BaseAppState implements ActionListener {
         coneFallSound = new AudioNode(app.getAssetManager(), "Sound/coneDrop.ogg", AudioData.DataType.Buffer);
         coneDropSound = new AudioNode(app.getAssetManager(), "Sound/coneFall.ogg", AudioData.DataType.Buffer);
 
+        coneFallSound.setPositional(false);
+        coneDropSound.setPositional(false);
+        coneDropSound.setVolume(0.5f);
+
         floatingCone = basicTrafficCone.clone();
         floatingCone.setLocalTranslation(0, heightOffset+1, 0);
         this.app.getRootNode().attachChild(floatingCone);
