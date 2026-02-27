@@ -3,24 +3,22 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTra
 plugins {
     id 'application'
     id 'java'
-    id "de.undercouch.download" version "5.1.0"
     id 'idea'
     id "io.github.0ffz.github-packages" version "1.2.1" // Plugin for anonymous inclusion of artifacts hosted in github package registry
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id 'com.google.protobuf' version '0.9.4'
+    id 'org.beryx.runtime' version '2.0.1'
 }
 
-description = 'ConeStackerJ application'
+version=appVersion
+description = appDescription
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-    // sourceCompatibility = '21'
-    // targetCompatibility = '21'
 }
 
-ext.jmonkeyengineVersion = '3.8.1-stable'
 
 mainClassName = 'net.alus.Main'
 if (!hasProperty('mainClass')) {
@@ -43,203 +41,101 @@ application {
 }
 
 dependencies {
-    // You can read more about how to add dependencies here:
-    //   https://docs.gradle.org/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
+    implementation "org.jmonkeyengine:jme3-core:${jmonkeyengineVersion}"
+    implementation "org.jmonkeyengine:jme3-desktop:${jmonkeyengineVersion}"
+    implementation "org.jmonkeyengine:jme3-awt-dialogs:${jmonkeyengineVersion}"
+    implementation "org.jmonkeyengine:jme3-effects:${jmonkeyengineVersion}"
+    runtimeOnly "org.jmonkeyengine:jme3-jogg:${jmonkeyengineVersion}"
+    runtimeOnly "org.jmonkeyengine:jme3-plugins:${jmonkeyengineVersion}"
+    runtimeOnly "org.jmonkeyengine:jme3-lwjgl3:${jmonkeyengineVersion}"
 
-    implementation 'org.jmonkeyengine:jme3-core:' + jmonkeyengineVersion
-    implementation 'org.jmonkeyengine:jme3-desktop:' + jmonkeyengineVersion
-    implementation 'org.jmonkeyengine:jme3-awt-dialogs:' + jmonkeyengineVersion
-    implementation 'org.jmonkeyengine:jme3-effects:' + jmonkeyengineVersion
-    runtimeOnly 'org.jmonkeyengine:jme3-jogg:' + jmonkeyengineVersion
-    runtimeOnly 'org.jmonkeyengine:jme3-plugins:' + jmonkeyengineVersion
-    runtimeOnly 'org.jmonkeyengine:jme3-lwjgl3:' + jmonkeyengineVersion
+    implementation("org.springframework.boot:spring-boot-starter:${springBootVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-tomcat:${springBootVersion}")
 
-    // Source: https://mvnrepository.com/artifact/org.springframework.boot/spring-boot
-    //implementation("org.springframework.boot:spring-boot:4.0.3")
+    implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
 
-    implementation("org.springframework.boot:spring-boot-starter:4.0.3")
-    implementation("org.springframework.boot:spring-boot-starter-web:4.0.3")
-    implementation("org.springframework.boot:spring-boot-starter-tomcat:4.0.3")
+    implementation "com.github.Twinkle942910:CheckMateFilter:${checkMateFilterVersion}"
 
-    // Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation("com.google.protobuf:protobuf-java:4.33.5")
-
-    implementation 'com.github.Twinkle942910:CheckMateFilter:v1.0'
-
-    implementation 'com.simsilica:lemur:1.16.0'
-    implementation 'com.simsilica:lemur-proto:1.13.0'
-    implementation 'com.github.stephengold:Heart:8.6.0'
+    implementation "com.simsilica:lemur:${lemurVersion}"
+    implementation "com.simsilica:lemur-proto:${lemurProtoVersion}"
 }
 
-distZip {
-    //having a degenerate folder within the dist zip complicates generating the other zips
-    eachFile { file ->
-        String path = file.relativePath
-        file.setPath(path.substring(path.indexOf("/") + 1, path.length()))
-    }
-    includeEmptyDirs(false)
-}
+runtime {
+    options = [
+            '--strip-debug',
+            '--no-header-files',
+            '--no-man-pages',
+            '--compress', 'zip-6'
+    ]
 
-//See https://api.adoptium.net/v3/assets/feature_releases/11/ga?image_type=jre for jre urls
-def windowsJreUrl = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.6%2B10/OpenJDK17U-jre_x64_windows_hotspot_17.0.6_10.zip"
-def linuxJreUrl = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.6%2B10/OpenJDK17U-jre_x64_linux_hotspot_17.0.6_10.tar.gz"
-def macJreUrl = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.6%2B10/OpenJDK17U-jre_x64_mac_hotspot_17.0.6_10.tar.gz"
+    modules = [
+            'java.net.http',
+            'java.prefs',
+            'java.compiler',
+            'jdk.jfr',
+            'java.base',
+            'java.desktop',
+            'java.logging',
+            'java.naming',
+            'java.scripting',
+            'java.sql',
+            'java.xml',
+            'jdk.unsupported',
+            'jdk.crypto.ec',
+            'jdk.crypto.cryptoki',
+            'java.management',
+            'java.instrument',
+            'java.security.jgss'
+    ]
 
+    jpackage {
+        imageName = 'ConeStackerJ'
+        mainJar = shadowJar.archiveFileName.get()
 
-task downloadWindowsJre(type: Download) {
-    src windowsJreUrl
-    dest new File(buildDir, '/jres/windowsJre.zip')
-    overwrite false
-}
+        imageOptions = [
+                '--vendor', 'Minecraftalus',
+                '--app-version', project.version.toString(),
+        ]
 
-task downloadAndUnzipWindowsJre(dependsOn: downloadWindowsJre, type: Copy) {
-    from zipTree(downloadWindowsJre.dest)
-    into "${buildDir}/jres/windowsJre/"
-    includeEmptyDirs(false)
-    filesMatching("**") {
-        it.path = it.path.replaceAll("^[a-zA-Z0-9.+-]*[/\\\\]", "jre/") //rename the top level to something standard so the rest of the script will be easier
-    }
-}
+        if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
+            imageOptions.addAll(['--icon', 'icons/icon.ico'])
 
-task buildWindowsDistribution(dependsOn: [distZip, downloadAndUnzipWindowsJre], type: Copy)
-{
-    group 'distribution'
-    from files("${projectDir}/scripts/desktopDeployment/ConeStackerJ.bat"), zipTree(distZip.archiveFile), "${buildDir}/jres/windowsJre"
-    into new File(buildDir, 'distributions/ConeStackerJ-windows')
-    includeEmptyDirs false
-    exclude 'bin/**' //we are adding our own run scripts, exclude the ones coming from distZip
-}
+            installerType = 'msi'
+            installerOptions = [
+                    '--win-shortcut',
+                    '--win-menu',
+                    '--win-dir-chooser',
+                    '--win-per-user-install',
+                    '--win-upgrade-uuid', '17d8dfd0-41f1-430b-ae0e-c8e1d21973e5'
+            ]
+        }
 
-task zipWindowsDistribution( dependsOn:buildWindowsDistribution, type: Zip) {
-    group 'distribution'
-    archiveFileName = "ConeStackerJ-windows.zip"
-    destinationDirectory = file("$buildDir/distributions")
-    from "$buildDir/distributions/ConeStackerJ-windows"
-}
+        if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+            installerType = 'dmg'
+            imageOptions.addAll(['--icon', 'icons/icon.icns'])
+            jvmArgs = ['-XstartOnFirstThread']
+            installerOptions = [
+                    '--mac-package-name', 'conestackerj',
+            ]
+        }
 
-
-task downloadLinuxJre(type: Download) {
-    src linuxJreUrl
-    dest new File(buildDir, '/jres/linuxJre.tar.gz')
-    overwrite false
-}
-
-task downloadAndUnzipLinuxJre(dependsOn: downloadLinuxJre, type: Copy) {
-    from tarTree(downloadLinuxJre.dest)
-    into "${buildDir}/jres/linuxJre/"
-    includeEmptyDirs(false)
-    filesMatching("**") {
-        it.path = it.path.replaceAll("^[a-zA-Z0-9.+-]*[/\\\\]", "jre/") //rename the top level to something standard so the rest of the script will be easier
-    }
-}
-
-task buildLinuxDistribution(dependsOn: [distZip, downloadAndUnzipLinuxJre], type: Copy)
-{
-    group 'distribution'
-    from files("${projectDir}/scripts/desktopDeployment/ConeStackerJ.sh"){
-        fileMode 0755
-    }
-    from zipTree(distZip.archiveFile)
-    from "${buildDir}/jres/linuxJre"
-    into new File(buildDir, 'distributions/ConeStackerJ-linux')
-    includeEmptyDirs false
-    exclude 'bin/**' //we are adding our own run scripts, exclude the ones coming from distZip
-}
-
-task zipLinuxDistribution( dependsOn:buildLinuxDistribution, type: Zip) {
-    group 'distribution'
-    archiveFileName = "ConeStackerJ-linux.tar.gz"
-    destinationDirectory = file("$buildDir/distributions")
-    from ("$buildDir/distributions/ConeStackerJ-linux"){
-      include('**.sh')
-      include('**/java')
-      fileMode 0755
-    }
-    from ("$buildDir/distributions/ConeStackerJ-linux"){
-        exclude('**.sh')
-        exclude('**/java')
-    }
-}
-
-
-task downloadMacJre(type: Download) {
-    src macJreUrl
-    dest new File(buildDir, '/jres/macJre.tar.gz')
-    overwrite false
-}
-
-task downloadAndUnzipMacJre(dependsOn: downloadMacJre, type: Copy) {
-    from tarTree(downloadMacJre.dest)
-    into "${buildDir}/jres/macJre/"
-    includeEmptyDirs(false)
-    filesMatching("**") {
-        it.path = it.path.replaceAll("^[a-zA-Z0-9.+-]*[/\\\\]", "jre/") //rename the top level to something standard so the rest of the script will be easier
-    }
-}
-
-task buildMacDistribution(dependsOn: [distZip, downloadAndUnzipMacJre], type: Copy)
-{
-    group 'distribution'
-    from files("${projectDir}/scripts/desktopDeployment/ConeStackerJ.command"){
-        fileMode 0755
-    }
-    from zipTree(distZip.archiveFile) 
-    from "${buildDir}/jres/macJre"
-    into new File(buildDir, 'distributions/ConeStackerJ-mac')
-    includeEmptyDirs false
-    exclude 'bin/**' //we are adding our own run scripts, exclude the ones coming from distZip
-}
-
-task zipMacDistribution( dependsOn:buildMacDistribution, type: Zip) {
-    group 'distribution'
-    archiveFileName = "ConeStackerJ-mac.tar.gz"
-    destinationDirectory = file("$buildDir/distributions")
-    from ("$buildDir/distributions/ConeStackerJ-mac"){
-      include('**.command')
-      include('**/java')
-      fileMode 0755
-    }
-    from ("$buildDir/distributions/ConeStackerJ-mac"){
-        exclude('**.command')
-        exclude('**/java')
-    }
-}
-
-task buildAllDistributions{
-    group 'distribution'
-    dependsOn 'zipWindowsDistribution'
-    dependsOn 'zipLinuxDistribution'
-    dependsOn 'zipMacDistribution'
-
-    doLast {
-        println("Distributions created in build/distributions folder")
-    }
-}
-
-// cleanup tasks
-clean.dependsOn('cleanDLLs', 'cleanDyLibs', 'cleanLogs', 'cleanSOs')
-task cleanDLLs(type: Delete) {
-    delete fileTree(dir: '.', include: '*.dll')
-}
-task cleanDyLibs(type: Delete) {
-    delete fileTree(dir: '.', include: '*.dylib')
-}
-task cleanLogs(type: Delete) {
-    delete fileTree(dir: '.', include: 'hs_err_pid*.log')
-}
-task cleanSOs(type: Delete) {
-    delete fileTree(dir: '.', include: '*.so')
-}
-
-task fund(){
-    doLast {
-       java.awt.Desktop.desktop.browse "https://start.jmonkeyengine.org/#!funding=JME_DESKTOP,LEMUR,16283%2Fjme-igui,11511%2Fe534fc1e-5b78-46b7-a831-d5d40cbd9dcd".toURI()
+        if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
+            installerType = 'deb'
+            imageOptions.addAll(['--icon', 'icons/icon.png'])
+            installerOptions = [
+                    '--linux-shortcut',
+                    '--linux-package-name', 'conestackerj',
+                    '--linux-menu-group', 'Game',
+                    '--linux-app-category', 'Game',
+            ]
+        }
     }
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.33.5"
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
     }
     generateProtoTasks {
         all().each { task ->
@@ -268,3 +164,10 @@ shadowJar {
         mergeStrategy = "append"
     }
 }
+
+clean.dependsOn('cleanNatives')
+tasks.register('cleanNatives', Delete) {
+    delete fileTree(dir: '.', include: ['*.dll', '*.dylib', '*.so', 'hs_err_pid*.log'])
+}
+
+tasks.jpackage.dependsOn(shadowJar)
