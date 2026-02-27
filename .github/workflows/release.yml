@@ -17,14 +17,21 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: ConeStackerJ-Setup.msi
+            artifact_name: conestackerj-Setup.msi
             extension: "*.msi"
+            extra_args: ""
           - os: ubuntu-latest
             artifact_name: conestackerj-linux.deb
             extension: "*.deb"
+            extra_args: "-PinstallerType=deb"
+          - os: ubuntu-latest
+            artifact_name: conestackerj-linux.rpm
+            extension: "*.rpm"
+            extra_args: "-PinstallerType=rpm"
           - os: macos-latest
-            artifact_name: ConeStackerJ-mac.dmg
+            artifact_name: conestackerj-mac.dmg
             extension: "*.dmg"
+            extra_args: ""
 
     steps:
       - name: Checkout Code
@@ -42,7 +49,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Installer
-        run: ./gradlew jpackage
+        run: ./gradlew jpackage ${{ matrix.extra_args }}
 
       - name: Prepare Artifacts
         shell: bash
@@ -54,7 +61,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ matrix.os }}
+          name: installer-${{ matrix.artifact_name }}
           path: staging/
           if-no-files-found: error
 
@@ -75,5 +82,6 @@ jobs:
           files: |
             dist/*.msi
             dist/*.deb
+            dist/*.rpm
             dist/*.dmg
           generate_release_notes: true

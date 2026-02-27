@@ -121,7 +121,7 @@ runtime {
         }
 
         if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
-            installerType = 'deb'
+            installerType = project.hasProperty('installerType') ? project.property('installerType') : 'deb'
             imageOptions.addAll(['--icon', 'icons/icon.png'])
             installerOptions = [
                     '--linux-shortcut',
