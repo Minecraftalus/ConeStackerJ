@@ -11,6 +11,7 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Spatial;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class StackerAppState extends BaseAppState implements ActionListener {
     private ConeStackerJ app;
@@ -29,6 +30,7 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     private final float maxConeSpeed = 12f;
     private final float speedChangePerCone = 0.9f;
     private float coneWidth;
+    private final Random random = new Random();
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
@@ -77,7 +79,11 @@ public class StackerAppState extends BaseAppState implements ActionListener {
                 coneSpeed += speedChangePerCone;
             }
             getState(UiAppState.class).updateScore(score);
-            app.getAudioRenderer().playSource(coneFallSound.clone());
+            if(score>0) {
+              AudioNode sound = coneFallSound.clone();
+              sound.setPitch(coneFallSound.getPitch()+random.nextFloat(-0.1f, 0.1f));
+              app.getAudioRenderer().playSource(sound);
+            }
         } else {
             for(Spatial cone : cones) {
                 app.getRootNode().detachChild(cone);
