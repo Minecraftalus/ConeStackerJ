@@ -57,9 +57,9 @@ public class StackerAppState extends BaseAppState implements ActionListener {
                 app.getAudioRenderer().playSource(sound);
             } else {
                 Leaderboard.getInstance().saveScore(score);
-                getState(UiAppState.class).updateScore(score);
                 getState(UiAppState.class).handleGameOver();
                 resetGame(true);
+                getState(UiAppState.class).updateScore(score);
                 app.getAudioRenderer().playSource(coneDropSound.clone());
             }
         }
