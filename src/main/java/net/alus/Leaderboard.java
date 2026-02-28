@@ -66,6 +66,12 @@ public class Leaderboard implements Serializable {
   }
 
   public synchronized void setUsername(String username) {
+    username = username.replaceAll("[^a-zA-Z0-9_-]", "");
+    if(username.length() > 12) {
+      username = username.substring(0, 12);
+    } else if(username.isEmpty()) {
+      username="Guest";
+    }
     if(textFilter.isProfane(username))
       username="Guest";
     this.username=username;
