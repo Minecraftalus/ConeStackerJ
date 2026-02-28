@@ -42,14 +42,12 @@ public class ConeStackerJServer {
 
   @PostMapping(path = "/savescore")
   public void handleSaveScore(@RequestBody ScoreOuterClass.Score score) {
-    Leaderboard.getInstance().setUsername(score.getUser());
-    Leaderboard.getInstance().saveScore(score.getScore());
+    Leaderboard.getInstance().saveScore(score.getScore(), score.getUser());
   }
 
   @PostMapping(path = "/savescorelist")
   public void handleSaveScoreList(@RequestBody ScoreOuterClass.ScoreList scoreList) {
     for(ScoreOuterClass.Score score : scoreList.getScoresList()) {
-      Leaderboard.getInstance().setUsername(score.getUser());
       Leaderboard.getInstance().saveScore(score.getScore());
     }
   }

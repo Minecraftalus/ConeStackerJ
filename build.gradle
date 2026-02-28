@@ -54,6 +54,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-tomcat:${springBootVersion}")
 
     implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.google.guava:guava:33.5.0-jre")
 
     implementation "com.github.Twinkle942910:CheckMateFilter:${checkMateFilterVersion}"
 

@@ -111,7 +111,7 @@ public class UiAppState extends BaseAppState {
             public void focusLost(FocusChangeEvent event) {
                 if(usernameField.getText().isEmpty() || textFilter.isProfane(usernameField.getText()))
                     usernameField.setText("Guest");
-                Leaderboard.getInstance().setUsername(usernameField.getText());
+                Settings.getInstance().setUsername(usernameField.getText());
             }
         });
         usernameRef = usernameField.getDocumentModel().createReference();
@@ -141,7 +141,7 @@ public class UiAppState extends BaseAppState {
         removeObject(leaderboardButton);
         addObject(backButton);
         addObject(usernameField);
-        usernameField.setText(Leaderboard.getInstance().getUsername());
+        usernameField.setText(Settings.getInstance().getUsername());
     }
 
     private void handleLeaderboardPress(Button button) {
@@ -156,7 +156,7 @@ public class UiAppState extends BaseAppState {
         addObject(syncButton);
         updateGlobalLeaderboard();
         updateLocalLeaderboard();
-        usernameField.setText(Leaderboard.getInstance().getUsername());
+        usernameField.setText(Settings.getInstance().getUsername());
     }
 
     private void handleBackPress(Button button) {
