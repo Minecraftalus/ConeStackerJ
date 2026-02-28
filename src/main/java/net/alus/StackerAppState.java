@@ -1,6 +1,7 @@
 package net.alus;
 
 import com.jme3.app.Application;
+import com.jme3.app.LegacyApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
@@ -8,6 +9,9 @@ import com.jme3.bounding.BoundingBox;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 
 import java.util.ArrayList;
@@ -17,25 +21,47 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     private ConeStackerJ app;
     private AudioNode coneFallSound;
     private AudioNode coneDropSound;
-    private Spatial basicTrafficCone;
+    private Spatial basicTrafficCone, legacyTrafficCone, standardTrafficCone;
     private Spatial floatingCone;
     private float coneSpeed;
     public float coneX;
     private ConeDirection coneDirection = ConeDirection.left;
     private float heightOffset = 0;
     private ArrayList<Spatial> cones = new ArrayList<>();
-    private int score = -1; // initial cone makes this 0
+    private int score = 0;
     private boolean stackingEnabled = false;
     private final float initialConeSpeed = 4.55f;
     private final float maxConeSpeed = 12f;
     private final float speedChangePerCone = 0.9f;
     private float coneWidth;
     private final Random random = new Random();
+    private DirectionalLight directionalLight;
+    private AmbientLight ambientLight;
+    private GraphicsMode graphicsMode;
+    private float coneOffsetPerStack;
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
         if(name.equals("Place") && isPressed && stackingEnabled) {
-            spawnCone();
+            if(coneX>-coneWidth/2 && coneX<coneWidth/2) {
+                heightOffset += coneOffsetPerStack;
+                score++;
+                spawnCone();
+                getState(UiAppState.class).updateScore(score);
+                coneX=0;
+                if (coneSpeed <= maxConeSpeed) {
+                    coneSpeed += speedChangePerCone;
+                }
+                AudioNode sound = coneFallSound.clone();
+                sound.setPitch(coneFallSound.getPitch()+random.nextFloat(-0.1f, 0.1f));
+                app.getAudioRenderer().playSource(sound);
+            } else {
+                Leaderboard.getInstance().saveScore(score);
+                getState(UiAppState.class).updateScore(score);
+                getState(UiAppState.class).handleGameOver();
+                resetGame(true);
+                app.getAudioRenderer().playSource(coneDropSound.clone());
+            }
         }
     }
 
@@ -43,7 +69,19 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     protected void initialize(Application app) {
         this.app = (ConeStackerJ) app;
 
-        basicTrafficCone = app.getAssetManager().loadModel("Models/trafficcone.obj");
+        standardTrafficCone = app.getAssetManager().loadModel("Models/StandardCone.obj");
+        legacyTrafficCone = app.getAssetManager().loadModel("Models/LegacyCone.obj");
+
+        basicTrafficCone=standardTrafficCone; // default before settings are loaded
+
+        coneOffsetPerStack=0.25f;
+
+        directionalLight = new DirectionalLight(new Vector3f(-0.5f, -0.2f, -0.3f).normalizeLocal());
+        ambientLight = new AmbientLight();
+
+        this.app.getRootNode().addLight(ambientLight);
+        this.app.getRootNode().addLight(directionalLight);
+
         Spatial base = app.getAssetManager().loadModel("Models/Base.obj");
         this.app.getRootNode().attachChild(base);
 
@@ -66,43 +104,17 @@ public class StackerAppState extends BaseAppState implements ActionListener {
         app.getInputManager().addMapping("Place", new KeyTrigger(KeyInput.KEY_UP));
         app.getInputManager().addListener(this, "Place");
 
-        spawnCone();
+      updateGraphicsMode(Settings.getInstance().getGraphicsMode());
+
+      spawnCone();
     }
 
     private void spawnCone() {
-        if(coneX>-coneWidth/2 && coneX<coneWidth/2) {
-            Spatial newCone = basicTrafficCone.clone();
-            newCone.setLocalTranslation(0, heightOffset, 0);
-            heightOffset += 0.4f;
-            cones.add(newCone);
-            app.getRootNode().attachChild(newCone);
-            getState(CameraAppState.class).setTarget(newCone);
-            score++;
-            coneX=0;
-            if (coneSpeed <= maxConeSpeed) {
-                coneSpeed += speedChangePerCone;
-            }
-            getState(UiAppState.class).updateScore(score);
-            if(score>0) {
-              AudioNode sound = coneFallSound.clone();
-              sound.setPitch(coneFallSound.getPitch()+random.nextFloat(-0.1f, 0.1f));
-              app.getAudioRenderer().playSource(sound);
-            }
-        } else {
-            for(Spatial cone : cones) {
-                app.getRootNode().detachChild(cone);
-            }
-            Leaderboard.getInstance().saveScore(score);
-            coneX = 0;
-            coneSpeed = initialConeSpeed;
-            heightOffset = 0;
-            score = -1;
-            cones.clear();
-            getState(UiAppState.class).updateScore(score);
-            spawnCone();
-            getState(UiAppState.class).handleGameOver();
-            app.getAudioRenderer().playSource(coneDropSound.clone());
-        }
+        Spatial newCone = basicTrafficCone.clone();
+        newCone.setLocalTranslation(0, heightOffset, 0);
+        cones.add(newCone);
+        app.getRootNode().attachChild(newCone);
+        getState(CameraAppState.class).setTarget(newCone);
     }
 
     @Override
@@ -133,11 +145,58 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     @Override
     protected void onDisable() {}
 
+    public void resetGame(boolean resetX) {
+        coneX = resetX ? 0 : coneX;
+        coneSpeed = initialConeSpeed;
+        heightOffset = 0;
+        score = 0;
+        for (Spatial cone : cones) {
+            app.getRootNode().detachChild(cone);
+        }
+        cones.clear();
+        spawnCone();
+    }
+
     public void setStackingEnabled(boolean enabled) {
         this.stackingEnabled=enabled;
     }
 
+    public void updateGraphicsMode(GraphicsMode mode) {
+        switch (mode) {
+            case legacy -> {
+                graphicsMode = GraphicsMode.legacy;
+
+                basicTrafficCone=legacyTrafficCone;
+
+                app.getRootNode().detachChild(floatingCone);
+                floatingCone = basicTrafficCone.clone();
+                app.getRootNode().attachChild(floatingCone);
+
+                coneOffsetPerStack=0.4f;
+
+                resetGame(false);
+            }
+            case standard -> {
+                graphicsMode = GraphicsMode.standard;
+
+                basicTrafficCone=standardTrafficCone;
+
+                app.getRootNode().detachChild(floatingCone);
+                floatingCone = basicTrafficCone.clone();
+                app.getRootNode().attachChild(floatingCone);
+
+                coneOffsetPerStack=0.25f;
+
+                resetGame(false);
+            }
+        }
+    }
+
     private enum ConeDirection {
         left, right
+    }
+
+    public enum GraphicsMode {
+        legacy, standard
     }
 }

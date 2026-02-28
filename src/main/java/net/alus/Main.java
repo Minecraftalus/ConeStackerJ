@@ -37,7 +37,6 @@ public class Main {
     ConeStackerJ app = new ConeStackerJ();
     AppSettings settings = new AppSettings(true);
     settings.setResizable(true);
-    settings.setGammaCorrection(false);
     settings.setTitle("Cone Stacker");
 
     try {

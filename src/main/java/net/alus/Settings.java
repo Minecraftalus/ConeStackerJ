@@ -13,11 +13,13 @@ public class Settings {
     private final static String filePath = "./settings.json";
     private final static Gson gson = new Gson();
     private static Settings instance;
+    private StackerAppState.GraphicsMode graphicsMode;
     private String username;
     private static final TextFilter textFilter = new TextFilter(Language.ENGLISH);
 
 
     private Settings() {
+        graphicsMode = StackerAppState.GraphicsMode.standard;
         username = "Guest";
     }
 
@@ -42,6 +44,15 @@ public class Settings {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public StackerAppState.GraphicsMode getGraphicsMode() {
+        return graphicsMode;
+    }
+
+    public void setGraphicsMode(StackerAppState.GraphicsMode graphicsMode) {
+        this.graphicsMode = graphicsMode;
+        save();
     }
 
     public String getUsername() {

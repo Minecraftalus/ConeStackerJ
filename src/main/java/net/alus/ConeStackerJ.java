@@ -26,7 +26,7 @@ public class ConeStackerJ extends SimpleApplication {
 
         Leaderboard.init(false);
 
-        float col = 200/255f;
+        float col = 159/255f;
         viewPort.setBackgroundColor(new ColorRGBA(col, col, col, 1f));
     }
 
