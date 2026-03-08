@@ -37,31 +37,14 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     private final Random random = new Random();
     private DirectionalLight directionalLight;
     private AmbientLight ambientLight;
-    private GraphicsMode graphicsMode;
     private float coneOffsetPerStack;
+    private boolean receivedInput = false;
+
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
-        if(name.equals("Place") && isPressed && stackingEnabled) {
-            if(coneX>-coneWidth/2 && coneX<coneWidth/2) {
-                heightOffset += coneOffsetPerStack;
-                score++;
-                spawnCone();
-                getState(UiAppState.class).updateScore(score);
-                coneX=0;
-                if (coneSpeed <= maxConeSpeed) {
-                    coneSpeed += speedChangePerCone;
-                }
-                AudioNode sound = coneFallSound.clone();
-                sound.setPitch(coneFallSound.getPitch()+random.nextFloat(-0.1f, 0.1f));
-                app.getAudioRenderer().playSource(sound);
-            } else {
-                Leaderboard.getInstance().saveScore(score);
-                getState(UiAppState.class).handleGameOver();
-                resetGame(true);
-                getState(UiAppState.class).updateScore(score);
-                app.getAudioRenderer().playSource(coneDropSound.clone());
-            }
+        if (name.equals("Place") && isPressed && this.stackingEnabled) {
+            this.receivedInput = true;
         }
     }
 
@@ -124,6 +107,10 @@ public class StackerAppState extends BaseAppState implements ActionListener {
 
     @Override
     public void update(float tpf) {
+        if (receivedInput) {
+            handleInput();
+            receivedInput = false;
+        }
         if(coneDirection == ConeDirection.right) {
             coneX += coneSpeed*tpf;
             if(coneX>coneWidth) {
@@ -164,8 +151,6 @@ public class StackerAppState extends BaseAppState implements ActionListener {
     public void updateGraphicsMode(GraphicsMode mode) {
         switch (mode) {
             case legacy -> {
-                graphicsMode = GraphicsMode.legacy;
-
                 basicTrafficCone=legacyTrafficCone;
 
                 app.getRootNode().detachChild(floatingCone);
@@ -177,8 +162,6 @@ public class StackerAppState extends BaseAppState implements ActionListener {
                 resetGame(false);
             }
             case standard -> {
-                graphicsMode = GraphicsMode.standard;
-
                 basicTrafficCone=standardTrafficCone;
 
                 app.getRootNode().detachChild(floatingCone);
@@ -189,6 +172,29 @@ public class StackerAppState extends BaseAppState implements ActionListener {
 
                 resetGame(false);
             }
+        }
+    }
+
+    private void handleInput() {
+        if (coneX > -coneWidth / 2.0F && coneX < coneWidth / 2.0F) {
+            heightOffset += coneOffsetPerStack;
+            score++;
+            spawnCone();
+            getState(UiAppState.class).updateScore(score);
+            coneX = 0.0F;
+            if (coneSpeed <= 12.0F) {
+                coneSpeed += 0.9F;
+            }
+
+            AudioNode sound = coneFallSound.clone();
+            sound.setPitch(coneFallSound.getPitch() + random.nextFloat(-0.1F, 0.1F));
+            app.getAudioRenderer().playSource(sound);
+        } else {
+            Leaderboard.getInstance().saveScore(score);
+            getState(UiAppState.class).handleGameOver();
+            resetGame(true);
+            getState(UiAppState.class).updateScore(score);
+            app.getAudioRenderer().playSource(coneDropSound.clone());
         }
     }
 
