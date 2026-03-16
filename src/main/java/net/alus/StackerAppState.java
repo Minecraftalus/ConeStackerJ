@@ -87,9 +87,9 @@ public class StackerAppState extends BaseAppState implements ActionListener {
         app.getInputManager().addMapping("Place", new KeyTrigger(KeyInput.KEY_UP));
         app.getInputManager().addListener(this, "Place");
 
-      updateGraphicsMode(Settings.getInstance().getGraphicsMode());
+        updateGraphicsMode(Settings.getInstance().getGraphicsMode());
 
-      spawnCone();
+        spawnCone();
     }
 
     private void spawnCone() {
@@ -182,8 +182,8 @@ public class StackerAppState extends BaseAppState implements ActionListener {
             spawnCone();
             getState(UiAppState.class).updateScore(score);
             coneX = 0.0F;
-            if (coneSpeed <= 12.0F) {
-                coneSpeed += 0.9F;
+            if (coneSpeed <= maxConeSpeed) {
+                coneSpeed += speedChangePerCone;
             }
 
             AudioNode sound = coneFallSound.clone();

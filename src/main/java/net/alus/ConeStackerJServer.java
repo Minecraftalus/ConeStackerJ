@@ -17,46 +17,46 @@ import java.util.Map;
 @RestController
 @SpringBootApplication
 public class ConeStackerJServer {
-  public static void startServer() {
-    Leaderboard.init(true);
-    SpringApplication.run(ConeStackerJServer.class);
-  }
+    public static void startServer() {
+        Leaderboard.init(true);
+        SpringApplication.run(ConeStackerJServer.class);
+    }
 
-  @GetMapping("/topten")
-  public ScoreOuterClass.ScoreList handleTopTen() {
-    Map<String, Integer> scores = Leaderboard.getInstance().getScores();
+    @GetMapping("/topten")
+    public ScoreOuterClass.ScoreList handleTopTen() {
+        Map<String, Integer> scores = Leaderboard.getInstance().getScores();
 
-    List<Map.Entry<String, Integer>> topTenList = scores.entrySet()
+        List<Map.Entry<String, Integer>> topTenList = scores.entrySet()
             .stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
             .limit(10)
             .toList();
 
-    ScoreOuterClass.ScoreList.Builder builder = ScoreOuterClass.ScoreList.newBuilder();
+        ScoreOuterClass.ScoreList.Builder builder = ScoreOuterClass.ScoreList.newBuilder();
 
-    for (Map.Entry<String, Integer> score : topTenList) {
-      builder.addScores(ScoreOuterClass.Score.newBuilder().setUser(score.getKey()).setScore(score.getValue()).build());
+        for (Map.Entry<String, Integer> score : topTenList) {
+            builder.addScores(ScoreOuterClass.Score.newBuilder().setUser(score.getKey()).setScore(score.getValue()).build());
+        }
+        return builder.build();
     }
-    return builder.build();
-  }
 
-  @PostMapping(path = "/savescore")
-  public void handleSaveScore(@RequestBody ScoreOuterClass.Score score) {
-    Leaderboard.getInstance().saveScore(score.getScore(), score.getUser());
-  }
-
-  @PostMapping(path = "/savescorelist")
-  public void handleSaveScoreList(@RequestBody ScoreOuterClass.ScoreList scoreList) {
-    for(ScoreOuterClass.Score score : scoreList.getScoresList()) {
-      Leaderboard.getInstance().saveScore(score.getScore(), score.getUser());
+    @PostMapping(path = "/savescore")
+    public void handleSaveScore(@RequestBody ScoreOuterClass.Score score) {
+        Leaderboard.getInstance().saveScore(score.getScore(), score.getUser());
     }
-  }
 
-  @Configuration
-  public class ProtoConfig {
-    @Bean
-    public ProtobufHttpMessageConverter protobufHttpMessageConverter() {
-      return new ProtobufHttpMessageConverter();
+    @PostMapping(path = "/savescorelist")
+    public void handleSaveScoreList(@RequestBody ScoreOuterClass.ScoreList scoreList) {
+        for(ScoreOuterClass.Score score : scoreList.getScoresList()) {
+            Leaderboard.getInstance().saveScore(score.getScore(), score.getUser());
+        }
     }
-  }
+
+    @Configuration
+    public class ProtoConfig {
+        @Bean
+        public ProtobufHttpMessageConverter protobufHttpMessageConverter() {
+            return new ProtobufHttpMessageConverter();
+        }
+    }
 }
