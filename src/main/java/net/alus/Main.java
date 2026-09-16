@@ -5,6 +5,7 @@ import com.jme3.system.AppSettings;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Locale;
 
 public class Main {
     public static void main(String[] args) {
@@ -33,18 +34,22 @@ public class Main {
     private static void startServer() {
         ConeStackerJServer.startServer();
     }
+
     private static void startClient() {
         ConeStackerJ app = new ConeStackerJ();
         AppSettings settings = new AppSettings(true);
         settings.setResizable(true);
         settings.setTitle("Cone Stacker");
 
-        try {
-            settings.setIcons(new BufferedImage[]{
-                ImageIO.read(Main.class.getResource("/Icons/icon64.png"))
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
+        String os = System.getProperty("os.name").toLowerCase();
+        if (!os.contains("mac")) {
+            try {
+                settings.setIcons(new BufferedImage[]{
+                        ImageIO.read(Main.class.getResource("/Icons/icon64.png"))
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         app.setSettings(settings);
